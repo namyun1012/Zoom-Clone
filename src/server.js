@@ -21,21 +21,41 @@ const wss = new WebSocket.Server({ server }); // for use http and ws, http is no
 
 // socket is connection between browser and server
 // server is browser
-function handleConnection(socket) {
-    console.log(socket);
-}
 
+// each browser execute this code 
+
+
+const sockets = [];
 
 wss.on("connection", (socket) => {
+    
+    sockets.push(socket);
+    socket["nickname"] = "Anon";
+
     console.log("Connected to Browser");
+    
     socket.on("close", ()=> {
         console.log("Disconnected form client");
     });
 
-    socket.on("message", (message) => {
-        console.log(message.toString('utf8')); // change to string
+    socket.on("message", (msg) => {
+        const message = JSON.parse(msg);
+        switch(message.type) {
+            case "new_message" :
+                sockets.forEach((aSocket) => aSocket.send(`${socket.nickname} : ${message.payload}`));
+                break; // if it is not, error occur
+
+            case "nickname":
+                socket["nickname"] = message.payload;
+                break;
+
+        }   
+
+        // onst message_string = message.toString('utf8');
+        
     });
-    socket.send("hello!!");
+    // socket.send("hello!!");
 });
 
 server.listen(3000, handleListen);
+
