@@ -1,6 +1,7 @@
 import express from "express"; 
 import http from "http";
 import WebSocket from "ws";
+import { Server } from "socket.io";
 
 const app = express();
 
@@ -16,17 +17,50 @@ const handleListen = () => console.log("Listening on http://localhost:3000/");
 
 
 // port is shared
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server }); // for use http and ws, http is not essential
+const httpServer = http.createServer(app);
+// const wss = new WebSocket.Server({ server }); // for use http and ws, http is not essential
+const io = new Server (httpServer, {});
+
+io.on("connection", socket => {
+
+    socket["nickname"] = "Anon";
+    // console.log(socket);
+    socket.onAny((event) => {
+        console.log(io.sockets.adapter);
+        console.log(`socket Event" ${event}`);
+    })
+    
+    socket.on("enter_room", (roomName, done) => {
+        socket.join(roomName);
+        done();
+        socket.to(roomName).emit("welcome", socket.nickname);
+    });
+
+    // disconnecting is an event
+    socket.on("disconnecting", () => {
+        socket.rooms.forEach(room => {
+            socket.to(room).emit("bye", socket.nickname); // bye is also an event
+        })
+    });
+
+    socket.on("new_message", (msg, room, done) => {
+        socket.to(room).emit("new_message", `${socket.nickname}: ${msg}`);
+        done();
+    });
+
+    socket.on("nickname", (nickname) => socket["nickname"] = nickname);
+});
+
+
+
 
 // socket is connection between browser and server
 // server is browser
 
 // each browser execute this code 
 
-
+/*
 const sockets = [];
-
 wss.on("connection", (socket) => {
     
     sockets.push(socket);
@@ -56,6 +90,6 @@ wss.on("connection", (socket) => {
     });
     // socket.send("hello!!");
 });
-
-server.listen(3000, handleListen);
+*/
+httpServer.listen(3000, handleListen);
 
