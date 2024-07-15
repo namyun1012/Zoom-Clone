@@ -3,7 +3,13 @@ import http from "http";
 import WebSocket from "ws";
 import { Server } from "socket.io";
 
+
+
+
 const app = express();
+
+
+
 
 app.set("view engine", "pug");
 app.set("views", __dirname + "/views");
@@ -20,6 +26,31 @@ const handleListen = () => console.log("Listening on http://localhost:3000/");
 const httpServer = http.createServer(app);
 // const wss = new WebSocket.Server({ server }); // for use http and ws, http is not essential
 const io = new Server (httpServer, {});
+const sids = io.sockets.adapter.sids;
+const rooms = io.sockets.adapter.rooms;
+
+function publicRooms() {
+    const {
+        sockets : {
+            adapter : {sids, roooms},
+        },
+    } = io;
+
+    const publicRooms = [];
+    rooms.forEach((_, key) => {
+        if(sids.get(key) === undefined) {
+            publicRooms.push(key);
+        }
+     })
+
+     return publicRooms;
+
+}
+
+function countRoom(roomName) {
+
+    return io.sockets.adapter.rooms.get(roomName)?.size ; 
+}
 
 io.on("connection", socket => {
 
@@ -30,18 +61,27 @@ io.on("connection", socket => {
         console.log(`socket Event" ${event}`);
     })
     
+    io.sockets.emit("room_change", publicRooms());
+    
+    // welcome
     socket.on("enter_room", (roomName, done) => {
         socket.join(roomName);
         done();
-        socket.to(roomName).emit("welcome", socket.nickname);
+        socket.to(roomName).emit("welcome", socket.nickname, countRoom(roomName));
+        io.sockets.emit("room_change", publicRooms());
     });
 
     // disconnecting is an event
     socket.on("disconnecting", () => {
         socket.rooms.forEach(room => {
-            socket.to(room).emit("bye", socket.nickname); // bye is also an event
+            
+            socket.to(room).emit("bye", socket.nickname, countRoom(room) - 1); // bye is also an event
         })
     });
+
+    socket.on("disconnect", () => {
+        io.sockets.emit("room_change", publicRooms());
+    })
 
     socket.on("new_message", (msg, room, done) => {
         socket.to(room).emit("new_message", `${socket.nickname}: ${msg}`);
