@@ -17,3 +17,6 @@ high reliability
 Adapter : Synchronization
 Many Server >>  
 
+webRTC : peer to peer 
+Server is need to signaling, 연결 주소 등의 연결에 필요한 정보를 알리는데 필요
+
