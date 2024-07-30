@@ -21,6 +21,17 @@ const httpServer = http.createServer(app);
 // const wss = new WebSocket.Server({ server }); // for use http and ws, http is not essential
 const io = new Server (httpServer, {});
 
+io.on("connection", socket => {
+    socket.on("join_room", (roomName, done) => {
+        socket.join(roomName);
+        done();
+        socket.to(roomName).emit("welcome");
+    })
+
+    socket.on("offer", (offer, roomName) => {
+        socket.to(roomName).emit("offer", offer);
+    });
+})
 
 // socket is connection between browser and server
 // server is browser
