@@ -21,3 +21,4 @@ webRTC : peer to peer
 Server is need to signaling, 연결 주소 등의 연결에 필요한 정보를 알리는데 필요
 
 Ice Candidate : 브라우저끼리 소통
+STUN : 공용 IP 찾는 용도

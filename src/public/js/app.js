@@ -16,6 +16,7 @@ let muted = false;
 let cameraoff = false;
 let roomName = "";
 let myPeerConnection;
+let myDataChannel;
 
 async function getCameras() {
     try {
@@ -121,6 +122,9 @@ welcomeForm.addEventListener("submit", handleWelcomeSubmit);
 // Socket code
 
 socket.on("welcome", async () => {
+    myDataChannel = myPeerConnection.createDataChannel("chat");
+    myDataChannel.addEventListener("message", console.log);
+    console.log("made data channel");
     const offer = await myPeerConnection.createOffer();
     myPeerConnection.setLocalDescription(offer);
     console.log("sent the offer");
@@ -128,6 +132,10 @@ socket.on("welcome", async () => {
 });
 
 socket.on("offer", async(offer) => {
+    myPeerConnection.addEventListener("datachannel", (event) => {
+        myDataChannel = event.channel;
+        myDataChannel.addEventListener("message", console.log(event.data))
+    })
     console.log("recieved the offer");
     myPeerConnection.setRemoteDescription(offer);
     // console.log(offer);
@@ -149,7 +157,15 @@ socket.on("ice", ice => {
 // RTC
 
 function makeConnection() {
-    myPeerConnection = new RTCPeerConnection();
+    myPeerConnection = new RTCPeerConnection({
+        iceServers:[
+            {
+                urls: [
+                    "stun:stun.l.google.com:19302",
+                ],
+            },
+        ]
+    });
     myPeerConnection.addEventListener("icecandidate", hadnleIce);
     myPeerConnection.addEventListener("addstream", hadnleAddStream);
     //if(myStream) {
